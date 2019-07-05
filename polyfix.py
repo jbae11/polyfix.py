@@ -41,17 +41,14 @@ def polyfix(x, y, n, xfix, yfix, xder='', dydx=''):
     nspec = nfix + nder
 
     specval = np.vstack((yfix, dydx))
-
     # first find A and pc such that A*pc = specval
     A = np.zeros((nspec, n+1))
     # specified y values
     for i in range(n+1):
         A[:nfix, i] = np.hstack(np.ones((nfix, 1)) * xfix**(n+1-(i+1)))
-
     if nder > 0:
         for i in range(n):
             A[nfix:nder+nfix, i] = ((n-(i+1)+1) * np.ones((nder, 1)) * xder**(n-(i+1))).flatten()
-
     if nfix > 0:
         lastcol = n+1
         nmin = nspec - 1
@@ -61,7 +58,6 @@ def polyfix(x, y, n, xfix, yfix, xder='', dydx=''):
 
     if n < nmin:
         raise ValueError('Polynomial degree too low, cannot match all constraints')
-
     # find unique polynomial of degree nmin that fits the constraints
     firstcol = n-nmin#+1
     pc0 = np.linalg.solve(A[:, firstcol:lastcol], specval)
@@ -75,8 +71,11 @@ def polyfix(x, y, n, xfix, yfix, xder='', dydx=''):
     yfit = y - np.polyval(pc, x)
 
     B = sl.null_space(A)
-    z = np.linalg.lstsq(X @ B, yfit)[0][0]
-    p0 = B * z
+    z = np.linalg.lstsq(X @ B, yfit)[0]
+    if len(z) == 0:
+        z = z[0]
+        p0 = B*z
+    else:
+        p0 = B@z
     p = np.transpose(p0) + np.transpose(pc)
-    pdb.set_trace()
     return p
